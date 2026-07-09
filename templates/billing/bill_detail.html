@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bill.bill_number }} - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Bill {{ bill.bill_number }}</h1>
+<p class="subtitle">{{ bill.created_at|date:"d M Y, h:i A" }}{% if bill.order.customer_name %} &middot; {{ bill.order.customer_name }}{% endif %}</p>
+
+<div class="card">
+    {% for item in bill.items.all %}
+    <div class="product-row">
+        <div>
+            <div class="title">{{ item.product.product_title }}</div>
+            <div class="meta">Qty: {{ item.quantity }}</div>
+        </div>
+        <div class="price">₹{{ item.amount }}</div>
+    </div>
+    {% endfor %}
+    <p style="font-size: 1.3rem; font-weight: 700; margin-top: 12px;">Total: ₹{{ bill.total_amount }}</p>
+</div>
+
+<div class="actions-row">
+    <a href="{% url 'billing:order_build' %}" class="btn btn-primary">Start Another Order</a>
+</div>
+{% endblock %}

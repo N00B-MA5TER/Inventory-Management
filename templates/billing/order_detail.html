@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.id }} - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Order Summary #{{ order.id }}</h1>
+<p class="subtitle">{{ order.created_at|date:"d M Y, h:i A" }}{% if order.customer_name %} &middot; {{ order.customer_name }}{% endif %}</p>
+
+<div class="card">
+    {% for item in order.items.all %}
+    <div class="product-row">
+        <div class="title">{{ item.product.product_title }}</div>
+        <div class="meta">Qty: {{ item.quantity }}</div>
+    </div>
+    {% endfor %}
+    <p style="font-size: 1.2rem; font-weight: 700; margin-top: 12px;">Total Quantity: {{ order.total_quantity }}</p>
+</div>
+
+<div class="actions-row">
+    {% if order.has_bill %}
+        <a href="{% url 'billing:bill_detail' order.bill.pk %}" class="btn btn-primary">View Bill</a>
+    {% else %}
+        <a href="{% url 'billing:bill_create' order.pk %}" class="btn btn-primary">Generate Bill</a>
+    {% endif %}
+    <a href="{% url 'billing:order_build' %}" class="btn btn-secondary">Start Another Order</a>
+</div>
+{% endblock %}

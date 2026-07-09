@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Accounts - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Staff Accounts</h1>
+<p class="subtitle">Everyone who can log in</p>
+
+<a href="{% url 'accounts:user_create' %}" class="btn btn-primary" style="margin-bottom: 20px; display: inline-block;">+ Add New Account</a>
+
+{% for u in users %}
+<div class="product-row">
+    <div>
+        <div class="title">{{ u.username }}</div>
+        <div class="meta">{{ u.profile.get_role_display }}</div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

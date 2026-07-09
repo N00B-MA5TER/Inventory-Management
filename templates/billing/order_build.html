@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}New Order - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>New Order</h1>
+
+<div class="card">
+    <h2 style="margin-top:0;">Current Order ({{ cart_total_quantity }} item{{ cart_total_quantity|pluralize }})</h2>
+    {% if cart_items %}
+        {% for entry in cart_items %}
+        <div class="product-row">
+            <div class="title">{{ entry.quantity }} x {{ entry.product.product_title }}</div>
+            <form method="post" action="{% url 'billing:cart_remove' entry.product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Remove</button>
+            </form>
+        </div>
+        {% endfor %}
+
+        <form method="post" action="{% url 'billing:order_place' %}" style="margin-top: 16px;">
+            {% csrf_token %}
+            {% for field in customer_form %}
+            <div class="field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Place Order</button>
+        </form>
+    {% else %}
+        <p class="subtitle">No items added yet. Pick items below.</p>
+    {% endif %}
+</div>
+
+<div class="tabs">
+    {% for value, label in product_types %}
+    <a href="?type={{ value }}{% if query %}&q={{ query }}{% endif %}" class="tab {% if active_type == value %}tab-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+
+<form method="get" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <input type="hidden" name="type" value="{{ active_type }}">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by item or company name..." style="flex: 1; min-width: 200px;">
+    <button type="submit" class="btn btn-secondary">Search</button>
+</form>
+
+{% if products %}
+    {% for product in products %}
+    <div class="product-row">
+        <div>
+            <div class="title">{{ product.product_title }}</div>
+            <div class="meta">{{ product.company_name }}</div>
+            <div class="meta">
+                {% if product.is_low_stock %}
+                <span class="badge badge-low">Low Stock: {{ product.stock_quantity }} left</span>
+                {% else %}
+                <span class="badge badge-ok">In Stock: {{ product.stock_quantity }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <form method="post" action="{% url 'billing:cart_add' product.pk %}" style="display:flex; gap:8px; align-items:center;">
+            {% csrf_token %}
+            <input type="hidden" name="type" value="{{ active_type }}">
+            <input type="number" name="quantity" value="1" min="1" style="width: 90px;">
+            <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        {% if query %}
+            <p>No items found for "{{ query }}".</p>
+        {% else %}
+            <p>No items in this section yet.</p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

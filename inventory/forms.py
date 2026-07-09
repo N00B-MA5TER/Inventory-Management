@@ -1,6 +1,7 @@
 from django import forms
+from django.forms import inlineformset_factory
 
-from inventory.models import Product
+from inventory.models import Product, StockOnboardingItem, StockOnboardingRequest
 
 
 class ProductForm(forms.ModelForm):
@@ -10,17 +11,31 @@ class ProductForm(forms.ModelForm):
             'product_type',
             'product_title',
             'company_name',
-            'description',
             'price',
             'stock_quantity',
-            'reorder_level',
         ]
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-        }
         labels = {
             'product_title': 'Item Name',
             'company_name': 'Company / Brand',
             'stock_quantity': 'Quantity in Stock',
-            'reorder_level': 'Warn Me When Stock Falls To',
         }
+
+
+class StockOnboardingItemForm(forms.ModelForm):
+    class Meta:
+        model = StockOnboardingItem
+        fields = ['product', 'quantity_to_add']
+        labels = {
+            'quantity_to_add': 'Quantity to Add',
+        }
+
+
+StockOnboardingItemFormSet = inlineformset_factory(
+    StockOnboardingRequest,
+    StockOnboardingItem,
+    form=StockOnboardingItemForm,
+    extra=3,
+    can_delete=False,
+    min_num=1,
+    validate_min=True,
+)

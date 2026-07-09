@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Request Restock - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Request Restock</h1>
+<p class="subtitle">List the items and quantities you're bringing in. The owner will approve before stock updates.</p>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        {% if formset.non_form_errors %}
+        <ul class="errorlist">{% for error in formset.non_form_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+
+        {% for item_form in formset %}
+        <div class="card" style="background: #fafaf8;">
+            <div class="field">
+                <label for="{{ item_form.product.id_for_label }}">Item</label>
+                {{ item_form.product }}
+                {% if item_form.product.errors %}<ul class="errorlist">{% for error in item_form.product.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ item_form.quantity_to_add.id_for_label }}">Quantity to Add</label>
+                {{ item_form.quantity_to_add }}
+                {% if item_form.quantity_to_add.errors %}<ul class="errorlist">{% for error in item_form.quantity_to_add.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="actions-row">
+            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+            <a href="{% url 'inventory:product_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -13,6 +13,14 @@
         <a class="brand" href="{% url 'inventory:product_list' %}">Nandy Engineering Works</a>
         <nav>
             <a class="btn btn-secondary" href="{% url 'inventory:product_list' %}">Items</a>
+            <a class="btn btn-secondary" href="{% url 'billing:order_build' %}">New Order</a>
+            <a class="btn btn-secondary" href="{% url 'billing:daily_summary' %}">Daily Summary</a>
+            <a class="btn btn-secondary" href="{% url 'billing:monthly_summary' %}">Monthly Summary</a>
+            <a class="btn btn-secondary" href="{% url 'inventory:stock_onboarding_create' %}">Request Restock</a>
+            {% if user.profile.is_superadmin %}
+            <a class="btn btn-secondary" href="{% url 'inventory:stock_onboarding_queue' %}">Restock Approvals</a>
+            <a class="btn btn-secondary" href="{% url 'accounts:user_list' %}">Staff Accounts</a>
+            {% endif %}
             <form action="{% url 'accounts:logout' %}" method="post" style="display:inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-secondary">Log Out ({{ user.username }})</button>

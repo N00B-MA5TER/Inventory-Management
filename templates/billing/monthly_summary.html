@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Summary - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Monthly Summary</h1>
+<p class="subtitle">{{ period_label }}</p>
+
+<div class="actions-row" style="margin-bottom: 20px;">
+    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-secondary">&larr; Previous Month</a>
+    <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-secondary">Next Month &rarr;</a>
+</div>
+
+{% for section in sections %}
+<h2>{{ section.label }}</h2>
+
+<div class="card">
+    <h2 style="margin-top:0; font-size:1.1rem;">Items Ordered</h2>
+    {% if section.sold_items %}
+        {% for row in section.sold_items %}
+        <div class="product-row">
+            <div class="title">{{ row.product__product_title }}</div>
+            <div class="price">{{ row.total_quantity }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="subtitle">No orders for this section this month.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0; font-size:1.1rem;">Needs Restocking (3 or fewer left)</h2>
+    {% if section.restock_items %}
+        {% for product in section.restock_items %}
+        <div class="product-row">
+            <div class="title">{{ product.product_title }}</div>
+            <span class="badge badge-low">{{ product.stock_quantity }} left</span>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="subtitle">Nothing low on stock. Good.</p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

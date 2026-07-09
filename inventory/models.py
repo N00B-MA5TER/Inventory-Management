@@ -1,28 +1,20 @@
+from django.conf import settings
 from django.db import models
 
-
-class ProductType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
+RESTOCK_THRESHOLD = 3
 
 
 class Product(models.Model):
-    product_type = models.ForeignKey(ProductType, on_delete=models.PROTECT, related_name='products')
+    class ProductType(models.TextChoices):
+        TOOLS = 'tools', 'Tools'
+        SPARE_PARTS = 'spare_parts', 'Spare Parts'
+        SERVICES = 'services', 'Services'
+
+    product_type = models.CharField(max_length=20, choices=ProductType.choices)
     company_name = models.CharField(max_length=150)
     product_title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.PositiveIntegerField(default=0)
-    reorder_level = models.PositiveIntegerField(
-        default=5,
-        help_text='Show a low-stock warning once quantity falls to or below this number.',
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -37,4 +29,41 @@ class Product(models.Model):
 
     @property
     def is_low_stock(self):
-        return self.stock_quantity <= self.reorder_level
+        return self.stock_quantity <= RESTOCK_THRESHOLD
+
+
+class StockOnboardingRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='stock_requests_submitted'
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='stock_requests_reviewed',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f'Stock request #{self.id} by {self.submitted_by.username} ({self.get_status_display()})'
+
+    @property
+    def is_pending(self):
+        return self.status == self.Status.PENDING
+
+
+class StockOnboardingItem(models.Model):
+    request = models.ForeignKey(StockOnboardingRequest, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='onboarding_items')
+    quantity_to_add = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f'+{self.quantity_to_add} x {self.product.product_title}'

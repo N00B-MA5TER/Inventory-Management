@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Restock Approvals - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Restock Approvals</h1>
+<p class="subtitle">Requests waiting for your OK</p>
+
+{% if pending %}
+    {% for req in pending %}
+    <div class="card">
+        <h2 style="margin-top:0;">Request #{{ req.id }} &middot; by {{ req.submitted_by.username }}</h2>
+        <p class="meta">Submitted {{ req.submitted_at|date:"d M Y, h:i A" }}</p>
+        <ul>
+            {% for item in req.items.all %}
+            <li>{{ item.product.product_title }} &mdash; add {{ item.quantity_to_add }} (currently {{ item.product.stock_quantity }} in stock)</li>
+            {% endfor %}
+        </ul>
+        <div class="actions-row">
+            <form method="post" action="{% url 'inventory:stock_onboarding_approve' req.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Approve</button>
+            </form>
+            <form method="post" action="{% url 'inventory:stock_onboarding_reject' req.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Reject</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state"><p>No pending requests right now.</p></div>
+{% endif %}
+
+<h2>Recent History</h2>
+{% for req in history %}
+<div class="product-row">
+    <div>
+        <div class="title">Request #{{ req.id }} &middot; {{ req.submitted_by.username }}</div>
+        <div class="meta">{{ req.reviewed_at|date:"d M Y, h:i A" }} by {{ req.reviewed_by.username|default:"-" }}</div>
+    </div>
+    <div>
+        {% if req.status == 'approved' %}
+        <span class="badge badge-ok">Approved</span>
+        {% else %}
+        <span class="badge badge-low">Rejected</span>
+        {% endif %}
+    </div>
+</div>
+{% empty %}
+<p class="subtitle">No history yet.</p>
+{% endfor %}
+{% endblock %}

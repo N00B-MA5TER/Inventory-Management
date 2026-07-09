@@ -6,7 +6,14 @@
 <h1>Items</h1>
 <p class="subtitle">Everything currently in stock</p>
 
+<div class="tabs">
+    {% for value, label in product_types %}
+    <a href="?type={{ value }}{% if query %}&q={{ query }}{% endif %}" class="tab {% if active_type == value %}tab-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+
 <form method="get" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <input type="hidden" name="type" value="{{ active_type }}">
     <input type="text" name="q" value="{{ query }}" placeholder="Search by item or company name..." style="flex: 1; min-width: 200px;">
     <button type="submit" class="btn btn-secondary">Search</button>
     <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">+ Add New Item</a>
@@ -17,7 +24,7 @@
     <div class="product-row">
         <div>
             <div class="title">{{ product.product_title }}</div>
-            <div class="meta">{{ product.company_name }} &middot; {{ product.product_type.name }}</div>
+            <div class="meta">{{ product.company_name }}</div>
             <div class="meta">
                 {% if product.is_low_stock %}
                 <span class="badge badge-low">Low Stock: {{ product.stock_quantity }} left</span>

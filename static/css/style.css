@@ -97,6 +97,31 @@ h2 { font-size: 1.4rem; }
     margin-bottom: 16px;
 }
 
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    display: inline-block;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.tab-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
 .product-row {
     display: flex;
     align-items: center;
