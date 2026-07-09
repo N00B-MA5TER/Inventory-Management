@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nandy Engineering Works{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <header class="topbar">
+        <a class="brand" href="{% url 'inventory:product_list' %}">Nandy Engineering Works</a>
+        <nav>
+            <a class="btn btn-secondary" href="{% url 'inventory:product_list' %}">Items</a>
+            <form action="{% url 'accounts:logout' %}" method="post" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Log Out ({{ user.username }})</button>
+            </form>
+        </nav>
+    </header>
+    {% endif %}
+
+    <main class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

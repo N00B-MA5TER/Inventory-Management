@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Items - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Items</h1>
+<p class="subtitle">Everything currently in stock</p>
+
+<form method="get" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by item or company name..." style="flex: 1; min-width: 200px;">
+    <button type="submit" class="btn btn-secondary">Search</button>
+    <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">+ Add New Item</a>
+</form>
+
+{% if products %}
+    {% for product in products %}
+    <div class="product-row">
+        <div>
+            <div class="title">{{ product.product_title }}</div>
+            <div class="meta">{{ product.company_name }} &middot; {{ product.product_type.name }}</div>
+            <div class="meta">
+                {% if product.is_low_stock %}
+                <span class="badge badge-low">Low Stock: {{ product.stock_quantity }} left</span>
+                {% else %}
+                <span class="badge badge-ok">In Stock: {{ product.stock_quantity }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div class="price">₹{{ product.price }}</div>
+            <a href="{% url 'inventory:product_edit' product.pk %}" class="btn btn-secondary" style="margin-top: 8px;">Edit</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        {% if query %}
+            <p>No items found for "{{ query }}".</p>
+        {% else %}
+            <p>No items yet. Click "Add New Item" to get started.</p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}
