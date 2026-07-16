@@ -1,16 +1,33 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from accounts.decorators import superadmin_required
+from accounts.decorators import staff_required, superadmin_required
 from accounts.models import ActionLog
-from inventory.forms import ProductForm, StockOnboardingItemFormSet
-from inventory.models import Product, StockOnboardingRequest
+from inventory.forms import ProductForm, RestockItemForm
+from inventory.models import Product, StockOnboardingItem, StockOnboardingRequest
 from inventory.queries import browsable_products
 
+RESTOCK_CART_SESSION_KEY = 'restock_cart'
 
-@login_required
+
+def _get_restock_cart(request):
+    return request.session.setdefault(RESTOCK_CART_SESSION_KEY, {})
+
+
+def _restock_cart_items(request):
+    cart = _get_restock_cart(request)
+    product_ids = [int(pid) for pid in cart.keys()]
+    products = Product.objects.in_bulk(product_ids)
+    items = []
+    for pid_str, qty in cart.items():
+        product = products.get(int(pid_str))
+        if product:
+            items.append({'product': product, 'quantity': qty})
+    return items
+
+
+@staff_required
 def product_list(request):
     query = request.GET.get('q', '').strip()
     active_type = request.GET.get('type', Product.ProductType.TOOLS)
@@ -24,10 +41,11 @@ def product_list(request):
         'query': query,
         'active_type': active_type,
         'product_types': Product.ProductType.choices,
+        'show_exact_stock': True,
     })
 
 
-@login_required
+@staff_required
 def product_create(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -42,7 +60,7 @@ def product_create(request):
     return render(request, 'inventory/product_form.html', {'form': form, 'is_edit': False})
 
 
-@login_required
+@staff_required
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
 
@@ -59,25 +77,66 @@ def product_edit(request, pk):
     return render(request, 'inventory/product_form.html', {'form': form, 'is_edit': True, 'product': product})
 
 
-@login_required
-def stock_onboarding_create(request):
-    if request.method == 'POST':
-        onboarding_request = StockOnboardingRequest(submitted_by=request.user)
-        formset = StockOnboardingItemFormSet(request.POST, instance=onboarding_request)
-        if formset.is_valid():
-            onboarding_request.save()
-            formset.instance = onboarding_request
-            formset.save()
-            ActionLog.objects.create(
-                user=request.user,
-                action=f'Submitted stock onboarding request #{onboarding_request.id} for approval',
-            )
-            messages.success(request, 'Your restock request was submitted for approval.')
-            return redirect('inventory:product_list')
-    else:
-        formset = StockOnboardingItemFormSet()
+@staff_required
+def stock_onboarding_build(request):
+    cart_items = _restock_cart_items(request)
+    return render(request, 'inventory/stock_onboarding_form.html', {
+        'form': RestockItemForm(),
+        'cart_items': cart_items,
+    })
 
-    return render(request, 'inventory/stock_onboarding_form.html', {'formset': formset})
+
+@staff_required
+def stock_onboarding_cart_add(request):
+    if request.method == 'POST':
+        form = RestockItemForm(request.POST)
+        if form.is_valid():
+            product = form.cleaned_data['product']
+            quantity = form.cleaned_data['quantity_to_add']
+            cart = _get_restock_cart(request)
+            cart[str(product.pk)] = cart.get(str(product.pk), 0) + quantity
+            request.session.modified = True
+            messages.success(request, f'Added {quantity} x {product.product_title} to the list.')
+        else:
+            messages.error(request, 'Please pick an item and a valid quantity.')
+
+    return redirect('inventory:stock_onboarding_build')
+
+
+@staff_required
+def stock_onboarding_cart_remove(request, pk):
+    if request.method == 'POST':
+        cart = _get_restock_cart(request)
+        cart.pop(str(pk), None)
+        request.session.modified = True
+    return redirect('inventory:stock_onboarding_build')
+
+
+@staff_required
+def stock_onboarding_submit(request):
+    if request.method != 'POST':
+        return redirect('inventory:stock_onboarding_build')
+
+    cart_items = _restock_cart_items(request)
+    if not cart_items:
+        messages.error(request, 'Add at least one item before submitting.')
+        return redirect('inventory:stock_onboarding_build')
+
+    onboarding_request = StockOnboardingRequest.objects.create(submitted_by=request.user)
+    for item in cart_items:
+        StockOnboardingItem.objects.create(
+            request=onboarding_request, product=item['product'], quantity_to_add=item['quantity']
+        )
+
+    request.session[RESTOCK_CART_SESSION_KEY] = {}
+    request.session.modified = True
+
+    ActionLog.objects.create(
+        user=request.user,
+        action=f'Submitted stock onboarding request #{onboarding_request.id} for approval',
+    )
+    messages.success(request, 'Your restock request was submitted for approval.')
+    return redirect('inventory:product_list')
 
 
 @superadmin_required

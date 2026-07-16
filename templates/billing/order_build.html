@@ -51,13 +51,7 @@
         <div>
             <div class="title">{{ product.product_title }}</div>
             <div class="meta">{{ product.company_name }}</div>
-            <div class="meta">
-                {% if product.is_low_stock %}
-                <span class="badge badge-low">Low Stock: {{ product.stock_quantity }} left</span>
-                {% else %}
-                <span class="badge badge-ok">In Stock: {{ product.stock_quantity }}</span>
-                {% endif %}
-            </div>
+            <div class="meta">{% include "inventory/_stock_badge.html" %}</div>
         </div>
         <form method="post" action="{% url 'billing:cart_add' product.pk %}" style="display:flex; gap:8px; align-items:center;">
             {% csrf_token %}

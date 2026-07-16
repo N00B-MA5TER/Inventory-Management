@@ -6,6 +6,16 @@
 <h1>Order Summary #{{ order.id }}</h1>
 <p class="subtitle">{{ order.created_at|date:"d M Y, h:i A" }}{% if order.customer_name %} &middot; {{ order.customer_name }}{% endif %}</p>
 
+<p>
+    {% if order.status == 'pending' %}
+    <span class="badge badge-low">Waiting for Approval</span>
+    {% elif order.status == 'approved' %}
+    <span class="badge badge-ok">Approved</span>
+    {% else %}
+    <span class="badge badge-declined">Declined</span>
+    {% endif %}
+</p>
+
 <div class="card">
     {% for item in order.items.all %}
     <div class="product-row">
@@ -16,11 +26,33 @@
     <p style="font-size: 1.2rem; font-weight: 700; margin-top: 12px;">Total Quantity: {{ order.total_quantity }}</p>
 </div>
 
+{% if order.status == 'pending' and can_review %}
+<div class="card">
+    <h2 style="margin-top:0;">Review This Order</h2>
+    <div class="actions-row">
+        <form method="post" action="{% url 'billing:order_approve' order.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'billing:order_detail' order.pk %}">
+            <button type="submit" class="btn btn-primary">Approve</button>
+        </form>
+        {% if can_decline %}
+        <form method="post" action="{% url 'billing:order_decline' order.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'billing:order_detail' order.pk %}">
+            <button type="submit" class="btn btn-danger">Decline</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <div class="actions-row">
-    {% if order.has_bill %}
-        <a href="{% url 'billing:bill_detail' order.bill.pk %}" class="btn btn-primary">View Bill</a>
-    {% else %}
-        <a href="{% url 'billing:bill_create' order.pk %}" class="btn btn-primary">Generate Bill</a>
+    {% if order.status == 'approved' %}
+        {% if order.has_bill %}
+            <a href="{% url 'billing:bill_detail' order.bill.pk %}" class="btn btn-primary">View Bill</a>
+        {% elif can_review %}
+            <a href="{% url 'billing:bill_create' order.pk %}" class="btn btn-primary">Generate Bill</a>
+        {% endif %}
     {% endif %}
     <a href="{% url 'billing:order_build' %}" class="btn btn-secondary">Start Another Order</a>
 </div>

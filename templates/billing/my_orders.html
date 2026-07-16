@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>My Orders</h1>
+
+{% if orders %}
+    {% for order in orders %}
+    <a href="{% url 'billing:order_detail' order.pk %}" class="product-row" style="text-decoration:none; color:inherit;">
+        <div>
+            <div class="title">Order #{{ order.id }}</div>
+            <div class="meta">{{ order.created_at|date:"d M Y, h:i A" }} &middot; {{ order.total_quantity }} item{{ order.total_quantity|pluralize }}</div>
+        </div>
+        <div>
+            {% if order.status == 'pending' %}
+            <span class="badge badge-low">Waiting for Approval</span>
+            {% elif order.status == 'approved' %}
+            <span class="badge badge-ok">Approved</span>
+            {% else %}
+            <span class="badge badge-declined">Declined</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <p>You haven't placed any orders yet.</p>
+        <a href="{% url 'billing:order_build' %}" class="btn btn-primary" style="margin-top: 12px;">Place an Order</a>
+    </div>
+{% endif %}
+{% endblock %}

@@ -28,8 +28,12 @@ class Product(models.Model):
         return f'{self.product_title} ({self.company_name})'
 
     @property
+    def tracks_stock(self):
+        return self.product_type != self.ProductType.SERVICES
+
+    @property
     def is_low_stock(self):
-        return self.stock_quantity <= RESTOCK_THRESHOLD
+        return self.tracks_stock and self.stock_quantity <= RESTOCK_THRESHOLD
 
 
 class StockOnboardingRequest(models.Model):

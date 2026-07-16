@@ -5,10 +5,21 @@ from inventory.models import Product
 
 
 class Order(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        DECLINED = 'declined', 'Declined'
+
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='orders')
     customer_name = models.CharField(max_length=150, blank=True)
     customer_phone = models.CharField(max_length=20, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.APPROVED)
     created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='orders_reviewed',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -23,6 +34,10 @@ class Order(models.Model):
     @property
     def has_bill(self):
         return hasattr(self, 'bill')
+
+    @property
+    def is_pending(self):
+        return self.status == self.Status.PENDING
 
 
 class OrderItem(models.Model):

@@ -1,7 +1,6 @@
 from django import forms
-from django.forms import inlineformset_factory
 
-from inventory.models import Product, StockOnboardingItem, StockOnboardingRequest
+from inventory.models import Product
 
 
 class ProductForm(forms.ModelForm):
@@ -19,23 +18,13 @@ class ProductForm(forms.ModelForm):
             'company_name': 'Company / Brand',
             'stock_quantity': 'Quantity in Stock',
         }
-
-
-class StockOnboardingItemForm(forms.ModelForm):
-    class Meta:
-        model = StockOnboardingItem
-        fields = ['product', 'quantity_to_add']
-        labels = {
-            'quantity_to_add': 'Quantity to Add',
+        help_texts = {
+            'stock_quantity': 'Not used for Services — services are always available.',
         }
 
 
-StockOnboardingItemFormSet = inlineformset_factory(
-    StockOnboardingRequest,
-    StockOnboardingItem,
-    form=StockOnboardingItemForm,
-    extra=3,
-    can_delete=False,
-    min_num=1,
-    validate_min=True,
-)
+class RestockItemForm(forms.Form):
+    product = forms.ModelChoiceField(queryset=Product.objects.filter(product_type__in=[
+        Product.ProductType.TOOLS, Product.ProductType.SPARE_PARTS,
+    ]), label='Item')
+    quantity_to_add = forms.IntegerField(min_value=1, label='Quantity to Add')

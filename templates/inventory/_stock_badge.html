@@ -1,0 +1,15 @@
+{% if not product.tracks_stock %}
+<span class="badge badge-ok">Available</span>
+{% elif show_exact_stock %}
+    {% if product.is_low_stock %}
+    <span class="badge badge-low">Low Stock: {{ product.stock_quantity }} left</span>
+    {% else %}
+    <span class="badge badge-ok">In Stock: {{ product.stock_quantity }}</span>
+    {% endif %}
+{% else %}
+    {% if product.stock_quantity > 0 %}
+    <span class="badge badge-ok">Available</span>
+    {% else %}
+    <span class="badge badge-low">Out of Stock</span>
+    {% endif %}
+{% endif %}

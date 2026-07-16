@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Orders to Approve - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Orders to Approve</h1>
+<p class="subtitle">Customer orders waiting for a decision</p>
+
+{% if pending %}
+    {% for order in pending %}
+    <div class="card">
+        <h2 style="margin-top:0;">Order #{{ order.id }} &middot; {{ order.created_by.username }}</h2>
+        <p class="meta">{{ order.created_at|date:"d M Y, h:i A" }}{% if order.customer_name %} &middot; {{ order.customer_name }}{% endif %}</p>
+        <ul>
+            {% for item in order.items.all %}
+            <li>{{ item.quantity }} x {{ item.product.product_title }}</li>
+            {% endfor %}
+        </ul>
+        <div class="actions-row">
+            <form method="post" action="{% url 'billing:order_approve' order.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'billing:order_approval_queue' %}">
+                <button type="submit" class="btn btn-primary">Approve</button>
+            </form>
+            {% if can_decline %}
+            <form method="post" action="{% url 'billing:order_decline' order.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'billing:order_approval_queue' %}">
+                <button type="submit" class="btn btn-danger">Decline</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'billing:order_detail' order.pk %}" class="btn btn-secondary">View</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state"><p>No orders waiting for approval.</p></div>
+{% endif %}
+{% endblock %}

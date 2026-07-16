@@ -3,10 +3,12 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.decorators import staff_required, superadmin_required
 from accounts.models import ActionLog
 from billing.forms import OrderCustomerForm
 from billing.models import Bill, BillItem, Order, OrderItem
@@ -33,6 +35,13 @@ def _cart_items(request):
     return items
 
 
+def _deduct_stock(order):
+    for item in order.items.select_related('product'):
+        if item.product.tracks_stock:
+            item.product.stock_quantity = max(0, item.product.stock_quantity - item.quantity)
+            item.product.save(update_fields=['stock_quantity'])
+
+
 @login_required
 def order_build(request):
     query = request.GET.get('q', '').strip()
@@ -52,6 +61,7 @@ def order_build(request):
         'cart_items': cart_items,
         'cart_total_quantity': cart_total_quantity,
         'customer_form': OrderCustomerForm(),
+        'show_exact_stock': request.user.profile.is_admin_or_above,
     })
 
 
@@ -66,6 +76,14 @@ def cart_add(request, pk):
         except ValueError:
             quantity = 1
         quantity = max(1, quantity)
+
+        if product.tracks_stock:
+            cart = _get_cart(request)
+            already_in_cart = cart.get(str(product.pk), 0)
+            if already_in_cart + quantity > product.stock_quantity:
+                available = max(0, product.stock_quantity - already_in_cart)
+                messages.error(request, f'Only {available} more x {product.product_title} available.')
+                return redirect(f"{reverse('billing:order_build')}?type={redirect_type}")
 
         cart = _get_cart(request)
         cart[str(product.pk)] = cart.get(str(product.pk), 0) + quantity
@@ -94,33 +112,115 @@ def order_place(request):
         messages.error(request, 'Add at least one item before placing the order.')
         return redirect('billing:order_build')
 
+    is_staff_order = request.user.profile.is_admin_or_above
+
     customer_form = OrderCustomerForm(request.POST)
     order = customer_form.save(commit=False) if customer_form.is_valid() else Order()
     order.created_by = request.user
+
+    if is_staff_order:
+        order.status = Order.Status.APPROVED
+        order.reviewed_by = request.user
+        order.reviewed_at = timezone.now()
+    else:
+        order.status = Order.Status.PENDING
+
     order.save()
 
     for item in cart_items:
         OrderItem.objects.create(order=order, product=item['product'], quantity=item['quantity'])
 
+    if is_staff_order:
+        _deduct_stock(order)
+
     request.session[CART_SESSION_KEY] = {}
     request.session.modified = True
 
     ActionLog.objects.create(user=request.user, action=f'Placed order #{order.id}')
-    messages.success(request, f'Order #{order.id} placed.')
+    if is_staff_order:
+        messages.success(request, f'Order #{order.id} placed.')
+    else:
+        messages.success(request, f'Order #{order.id} placed — waiting for approval.')
     return redirect('billing:order_detail', pk=order.pk)
+
+
+def _can_view_order(request, order):
+    return order.created_by_id == request.user.id or request.user.profile.is_admin_or_above
 
 
 @login_required
 def order_detail(request, pk):
     order = get_object_or_404(Order.objects.prefetch_related('items__product'), pk=pk)
-    return render(request, 'billing/order_detail.html', {'order': order})
+    if not _can_view_order(request, order):
+        return HttpResponseForbidden('You cannot view this order.')
+    return render(request, 'billing/order_detail.html', {
+        'order': order,
+        'can_review': request.user.profile.is_admin_or_above,
+        'can_decline': request.user.profile.is_superadmin,
+    })
 
 
 @login_required
+def my_orders(request):
+    orders = Order.objects.filter(created_by=request.user).prefetch_related('items__product')
+    return render(request, 'billing/my_orders.html', {'orders': orders})
+
+
+@staff_required
+def order_approval_queue(request):
+    pending = Order.objects.filter(status=Order.Status.PENDING).select_related('created_by').prefetch_related('items__product')
+    return render(request, 'billing/order_approval_queue.html', {
+        'pending': pending,
+        'can_decline': request.user.profile.is_superadmin,
+    })
+
+
+@staff_required
+def order_approve(request, pk):
+    order = get_object_or_404(Order.objects.prefetch_related('items__product'), pk=pk, status=Order.Status.PENDING)
+    if request.method == 'POST':
+        insufficient = [
+            item.product.product_title for item in order.items.select_related('product')
+            if item.product.tracks_stock and item.quantity > item.product.stock_quantity
+        ]
+        if insufficient:
+            messages.error(request, f"Not enough stock for: {', '.join(insufficient)}. Cannot approve.")
+        else:
+            _deduct_stock(order)
+            order.status = Order.Status.APPROVED
+            order.reviewed_by = request.user
+            order.reviewed_at = timezone.now()
+            order.save()
+
+            ActionLog.objects.create(user=request.user, action=f'Approved order #{order.id}')
+            messages.success(request, f'Order #{order.id} approved.')
+
+    return redirect(request.POST.get('next') or 'billing:order_approval_queue')
+
+
+@superadmin_required
+def order_decline(request, pk):
+    order = get_object_or_404(Order, pk=pk, status=Order.Status.PENDING)
+    if request.method == 'POST':
+        order.status = Order.Status.DECLINED
+        order.reviewed_by = request.user
+        order.reviewed_at = timezone.now()
+        order.save()
+
+        ActionLog.objects.create(user=request.user, action=f'Declined order #{order.id}')
+        messages.success(request, f'Order #{order.id} declined.')
+
+    return redirect(request.POST.get('next') or 'billing:order_approval_queue')
+
+
+@staff_required
 def bill_create(request, pk):
     order = get_object_or_404(Order.objects.prefetch_related('items__product'), pk=pk)
     if order.has_bill:
         return redirect('billing:bill_detail', pk=order.bill.pk)
+    if order.status != Order.Status.APPROVED:
+        messages.error(request, 'Only approved orders can be billed.')
+        return redirect('billing:order_detail', pk=order.pk)
 
     if request.method == 'POST':
         bill = Bill(
@@ -152,10 +252,12 @@ def bill_create(request, pk):
 @login_required
 def bill_detail(request, pk):
     bill = get_object_or_404(Bill.objects.prefetch_related('items__product').select_related('order'), pk=pk)
+    if not _can_view_order(request, bill.order):
+        return HttpResponseForbidden('You cannot view this bill.')
     return render(request, 'billing/bill_detail.html', {'bill': bill})
 
 
-@login_required
+@superadmin_required
 def daily_summary(request):
     date_str = request.GET.get('date')
     if date_str:
@@ -172,7 +274,7 @@ def daily_summary(request):
     return render(request, 'billing/daily_summary.html', context)
 
 
-@login_required
+@superadmin_required
 def monthly_summary(request):
     today = timezone.localdate()
     year = int(request.GET.get('year', today.year))

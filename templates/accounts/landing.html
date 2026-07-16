@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Nandy Engineering Works</h1>
+    <p class="subtitle">Tools, spare parts, and repair services you can count on.</p>
+    <div class="actions-row" style="justify-content: center; margin-top: 24px;">
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary">Log In</a>
+        <a href="{% url 'accounts:register' %}" class="btn btn-secondary">Register</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Requests - Nandy Engineering Works{% endblock %}
+
+{% block content %}
+<h1>Employee Requests</h1>
+<p class="subtitle">People who registered and asked to become an employee</p>
+
+{% if pending %}
+    {% for req in pending %}
+    <div class="card">
+        <h2 style="margin-top:0;">{{ req.user.profile.full_name|default:req.user.username }}</h2>
+        <p class="meta">Username: {{ req.user.username }} &middot; Phone: {{ req.user.profile.phone|default:"-" }}</p>
+        <p class="meta">Requested {{ req.submitted_at|date:"d M Y, h:i A" }}</p>
+        <div class="actions-row">
+            <form method="post" action="{% url 'accounts:role_request_approve' req.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Approve</button>
+            </form>
+            <form method="post" action="{% url 'accounts:role_request_reject' req.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Reject</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state"><p>No pending employee requests.</p></div>
+{% endif %}
+
+<h2>Recent History</h2>
+{% for req in history %}
+<div class="product-row">
+    <div>
+        <div class="title">{{ req.user.profile.full_name|default:req.user.username }}</div>
+        <div class="meta">{{ req.reviewed_at|date:"d M Y, h:i A" }} by {{ req.reviewed_by.username|default:"-" }}</div>
+    </div>
+    <div>
+        {% if req.status == 'approved' %}
+        <span class="badge badge-ok">Approved</span>
+        {% else %}
+        <span class="badge badge-low">Rejected</span>
+        {% endif %}
+    </div>
+</div>
+{% empty %}
+<p class="subtitle">No history yet.</p>
+{% endfor %}
+{% endblock %}
