@@ -17,7 +17,7 @@
 <div id="item-list">
 {% if products %}
     {% for product in products %}
-    <div class="product-row" data-title="{{ product.product_title|lower }}" data-company="{{ product.company_name|lower }}">
+    <div class="product-row" data-title="{{ product.product_title|lower }}" data-company="{{ product.company_name|lower }}" data-vehicle-make="{{ product.vehicle_manufacturer|lower }}" data-vehicle-model="{{ product.vehicle_model|lower }}">
         <div>
             <div class="title">{{ product.product_title }}</div>
             <div class="meta">

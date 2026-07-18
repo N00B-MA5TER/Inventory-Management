@@ -7,7 +7,12 @@ from inventory.models import RESTOCK_THRESHOLD, Product
 
 def _apply_filters(qs, search='', company='', vehicle_make='', vehicle_model=''):
     if search:
-        qs = qs.filter(Q(product_title__icontains=search) | Q(company_name__icontains=search))
+        qs = qs.filter(
+            Q(product_title__icontains=search)
+            | Q(company_name__icontains=search)
+            | Q(vehicle_manufacturer__icontains=search)
+            | Q(vehicle_model__icontains=search)
+        )
     if company:
         qs = qs.filter(company_name=company)
     if vehicle_make:

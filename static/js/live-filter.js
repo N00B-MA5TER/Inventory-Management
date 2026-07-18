@@ -1,8 +1,9 @@
 // Progressive enhancement only: the search box already works via normal form
 // submit (page reload) without this script. This just makes the on-page list
 // narrow instantly as you type, without waiting for a server round-trip.
-// Matching is "starts with" on item name or company name, and never changes
-// the order items appear in — it only shows/hides rows already on the page.
+// Matching is "starts with" on item name, company/brand name, or (for Spare
+// Parts) vehicle manufacturer/model, and never changes the order items
+// appear in — it only shows/hides rows already on the page.
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-live-filter-input]').forEach(function (input) {
         var list = document.querySelector(input.getAttribute('data-live-filter-input'));
@@ -17,9 +18,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     row.style.display = '';
                     return;
                 }
-                var title = (row.getAttribute('data-title') || '');
-                var company = (row.getAttribute('data-company') || '');
-                var matches = title.indexOf(query) === 0 || company.indexOf(query) === 0;
+                var fields = [
+                    row.getAttribute('data-title') || '',
+                    row.getAttribute('data-company') || '',
+                    row.getAttribute('data-vehicle-make') || '',
+                    row.getAttribute('data-vehicle-model') || '',
+                ];
+                var matches = fields.some(function (field) { return field.indexOf(query) === 0; });
                 row.style.display = matches ? '' : 'none';
             });
         });
