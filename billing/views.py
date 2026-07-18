@@ -14,7 +14,7 @@ from billing.forms import OrderCustomerForm
 from billing.models import Bill, BillItem, Order, OrderItem
 from billing.reports import daily_summary_context, monthly_summary_context
 from inventory.models import Product
-from inventory.queries import browsable_products
+from inventory.queries import browsable_products, filter_options
 
 CART_SESSION_KEY = 'cart'
 
@@ -49,7 +49,13 @@ def order_build(request):
     if active_type not in Product.ProductType.values:
         active_type = Product.ProductType.TOOLS
 
-    products = browsable_products(active_type, search=query)
+    company = request.GET.get('company', '').strip()
+    vehicle_make = request.GET.get('vehicle_make', '').strip()
+    vehicle_model = request.GET.get('vehicle_model', '').strip()
+
+    products = browsable_products(
+        active_type, search=query, company=company, vehicle_make=vehicle_make, vehicle_model=vehicle_model,
+    )
     cart_items = _cart_items(request)
     cart_total_quantity = sum(item['quantity'] for item in cart_items)
 
@@ -62,6 +68,10 @@ def order_build(request):
         'cart_total_quantity': cart_total_quantity,
         'customer_form': OrderCustomerForm(),
         'show_exact_stock': request.user.profile.is_admin_or_above,
+        'filter_options': filter_options(active_type, company=company, vehicle_make=vehicle_make),
+        'selected_company': company,
+        'selected_vehicle_make': vehicle_make,
+        'selected_vehicle_model': vehicle_model,
     })
 
 

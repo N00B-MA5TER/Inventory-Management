@@ -12,19 +12,20 @@
     {% endfor %}
 </div>
 
-<form method="get" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-    <input type="hidden" name="type" value="{{ active_type }}">
-    <input type="text" name="q" value="{{ query }}" placeholder="Search by item or company name..." style="flex: 1; min-width: 200px;">
-    <button type="submit" class="btn btn-secondary">Search</button>
-    <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">+ Add New Item</a>
-</form>
+{% include "inventory/_filter_bar.html" with show_add_item_button=True %}
 
+<div id="item-list">
 {% if products %}
     {% for product in products %}
-    <div class="product-row">
+    <div class="product-row" data-title="{{ product.product_title|lower }}" data-company="{{ product.company_name|lower }}">
         <div>
             <div class="title">{{ product.product_title }}</div>
-            <div class="meta">{{ product.company_name }}</div>
+            <div class="meta">
+                {{ product.company_name }}
+                {% if product.vehicle_manufacturer or product.vehicle_model %}
+                &middot; {{ product.vehicle_manufacturer }} {{ product.vehicle_model }}
+                {% endif %}
+            </div>
             <div class="meta">{% include "inventory/_stock_badge.html" %}</div>
         </div>
         <div style="text-align: right;">
@@ -42,4 +43,5 @@
         {% endif %}
     </div>
 {% endif %}
+</div>
 {% endblock %}

@@ -6,7 +6,7 @@ from accounts.decorators import staff_required, superadmin_required
 from accounts.models import ActionLog
 from inventory.forms import ProductForm, RestockItemForm
 from inventory.models import Product, StockOnboardingItem, StockOnboardingRequest
-from inventory.queries import browsable_products
+from inventory.queries import browsable_products, filter_options
 
 RESTOCK_CART_SESSION_KEY = 'restock_cart'
 
@@ -34,7 +34,13 @@ def product_list(request):
     if active_type not in Product.ProductType.values:
         active_type = Product.ProductType.TOOLS
 
-    products = browsable_products(active_type, search=query)
+    company = request.GET.get('company', '').strip()
+    vehicle_make = request.GET.get('vehicle_make', '').strip()
+    vehicle_model = request.GET.get('vehicle_model', '').strip()
+
+    products = browsable_products(
+        active_type, search=query, company=company, vehicle_make=vehicle_make, vehicle_model=vehicle_model,
+    )
 
     return render(request, 'inventory/product_list.html', {
         'products': products,
@@ -42,6 +48,10 @@ def product_list(request):
         'active_type': active_type,
         'product_types': Product.ProductType.choices,
         'show_exact_stock': True,
+        'filter_options': filter_options(active_type, company=company, vehicle_make=vehicle_make),
+        'selected_company': company,
+        'selected_vehicle_make': vehicle_make,
+        'selected_vehicle_model': vehicle_model,
     })
 
 

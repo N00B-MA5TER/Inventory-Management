@@ -67,6 +67,42 @@ body {
     align-items: center;
 }
 
+/* Hamburger menu: hidden on wide screens, replaces the full nav below --nav-breakpoint.
+   Built the same no-JS way as the "More" menu (native <details>/<summary>). */
+.nav-burger { display: none; }
+
+@media (max-width: 860px) {
+    .topbar .nav-desktop { display: none; }
+    .nav-burger { display: block; position: relative; }
+
+    .burger-btn {
+        min-height: 48px;
+        padding: 10px 18px;
+    }
+
+    .nav-burger[open] summary { background: var(--color-primary-tint); border-color: var(--color-primary); }
+
+    .nav-burger-panel {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: 86px;
+        max-height: calc(100vh - 104px);
+        overflow-y: auto;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-pop);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 30;
+    }
+
+    .nav-burger-panel .btn { width: 100%; }
+}
+
 .container {
     max-width: 900px;
     margin: 0 auto;
@@ -247,10 +283,10 @@ input:focus, select:focus, textarea:focus {
     border-radius: var(--radius);
 }
 
-/* "More" menu: native <details>/<summary>, no JS needed, keyboard + tap friendly */
-.nav-more { position: relative; }
-.nav-more summary { list-style: none; }
-.nav-more summary::-webkit-details-marker { display: none; }
+/* "More" menu and hamburger menu: native <details>/<summary>, no JS needed, keyboard + tap friendly */
+.nav-more, .nav-burger { position: relative; }
+.nav-more summary, .nav-burger summary { list-style: none; }
+.nav-more summary::-webkit-details-marker, .nav-burger summary::-webkit-details-marker { display: none; }
 .nav-more[open] summary { background: var(--color-primary-tint); border-color: var(--color-primary); }
 
 .nav-more-panel {

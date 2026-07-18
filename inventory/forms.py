@@ -10,16 +10,22 @@ class ProductForm(forms.ModelForm):
             'product_type',
             'product_title',
             'company_name',
+            'vehicle_manufacturer',
+            'vehicle_model',
             'price',
             'stock_quantity',
         ]
         labels = {
             'product_title': 'Item Name',
             'company_name': 'Company / Brand',
+            'vehicle_manufacturer': 'Vehicle Manufacturer',
+            'vehicle_model': 'Vehicle Model',
             'stock_quantity': 'Quantity in Stock',
         }
         help_texts = {
             'stock_quantity': 'Not used for Services — services are always available.',
+            'vehicle_manufacturer': 'Spare Parts only — e.g. Maruti, Honda. Leave blank otherwise.',
+            'vehicle_model': 'Spare Parts only — e.g. Swift, Activa. Leave blank otherwise.',
         }
 
 

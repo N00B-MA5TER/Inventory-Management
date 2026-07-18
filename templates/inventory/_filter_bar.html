@@ -1,0 +1,42 @@
+<form method="get" style="margin-bottom: 12px;">
+    <input type="hidden" name="type" value="{{ active_type }}">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 12px;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by item or company name..."
+               style="flex: 1; min-width: 200px;" data-live-filter-input="#item-list">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if show_add_item_button %}<a href="{% url 'inventory:product_create' %}" class="btn btn-primary">+ Add New Item</a>{% endif %}
+    </div>
+
+    {% if filter_options.companies or filter_options.vehicle_makes %}
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        {% if filter_options.companies %}
+        <select name="company">
+            <option value="">All Companies</option>
+            {% for c in filter_options.companies %}
+            <option value="{{ c }}" {% if c == selected_company %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        {% if active_type == 'spare_parts' %}
+            <select name="vehicle_make">
+                <option value="">All Vehicle Manufacturers</option>
+                {% for m in filter_options.vehicle_makes %}
+                <option value="{{ m }}" {% if m == selected_vehicle_make %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+            <select name="vehicle_model">
+                <option value="">All Vehicle Models</option>
+                {% for m in filter_options.vehicle_models %}
+                <option value="{{ m }}" {% if m == selected_vehicle_model %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+
+        <button type="submit" class="btn btn-secondary">Apply Filters</button>
+        {% if selected_company or selected_vehicle_make or selected_vehicle_model %}
+        <a href="?type={{ active_type }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-secondary">Clear Filters</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</form>

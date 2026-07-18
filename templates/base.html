@@ -11,34 +11,17 @@
     {% if user.is_authenticated %}
     <header class="topbar">
         <a class="brand" href="{% url 'home' %}">Nandy Engineering Works</a>
-        <nav>
-            {% if user.profile.is_customer %}
-                <a class="btn btn-secondary" href="{% url 'billing:order_build' %}">Place Order</a>
-                <a class="btn btn-secondary" href="{% url 'billing:my_orders' %}">My Orders</a>
-            {% else %}
-                <a class="btn btn-secondary" href="{% url 'inventory:product_list' %}">Items</a>
-                <a class="btn btn-secondary" href="{% url 'billing:order_build' %}">New Order</a>
-                <a class="btn btn-secondary" href="{% url 'billing:order_approval_queue' %}">Orders to Approve</a>
-                <a class="btn btn-secondary" href="{% url 'inventory:stock_onboarding_build' %}">Request Restock</a>
 
-                {% if user.profile.is_superadmin %}
-                <details class="nav-more">
-                    <summary class="btn btn-secondary">More &#9662;</summary>
-                    <div class="nav-more-panel">
-                        <a href="{% url 'inventory:stock_onboarding_queue' %}">Restock Approvals</a>
-                        <a href="{% url 'accounts:role_request_queue' %}">Employee Requests</a>
-                        <a href="{% url 'billing:daily_summary' %}">Daily Summary</a>
-                        <a href="{% url 'billing:monthly_summary' %}">Monthly Summary</a>
-                        <a href="{% url 'accounts:user_list' %}">Staff Accounts</a>
-                    </div>
-                </details>
-                {% endif %}
-            {% endif %}
-            <form action="{% url 'accounts:logout' %}" method="post" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-secondary">Log Out ({{ user.username }})</button>
-            </form>
+        <nav class="nav-desktop">
+            {% include "_nav_links.html" with use_more_menu=True %}
         </nav>
+
+        <details class="nav-burger">
+            <summary class="btn btn-primary burger-btn">&#9776; Menu</summary>
+            <nav class="nav-burger-panel">
+                {% include "_nav_links.html" with use_more_menu=False %}
+            </nav>
+        </details>
     </header>
     {% endif %}
 
@@ -53,5 +36,7 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <script src="{% static 'js/live-filter.js' %}"></script>
 </body>
 </html>

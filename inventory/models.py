@@ -11,10 +11,18 @@ class Product(models.Model):
         SERVICES = 'services', 'Services'
 
     product_type = models.CharField(max_length=20, choices=ProductType.choices)
-    company_name = models.CharField(max_length=150)
+    company_name = models.CharField(max_length=150, help_text='Manufacturer / brand of the tool or part.')
     product_title = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.PositiveIntegerField(default=0)
+    vehicle_manufacturer = models.CharField(
+        max_length=150, blank=True,
+        help_text='Spare Parts only — the vehicle maker this part fits (e.g. Maruti, Honda).',
+    )
+    vehicle_model = models.CharField(
+        max_length=150, blank=True,
+        help_text='Spare Parts only — the vehicle model this part fits (e.g. Swift, Activa).',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
