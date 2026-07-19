@@ -1,0 +1,120 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  GCP_REGION: asia-south1
+  SERVICE_NAME: nandy-inventory
+  AR_REPO: nandy-inventory
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      # No tests exist yet (see project notes) — this runs 0 tests and passes
+      # trivially for now. It's here so the pipeline shape is correct from
+      # day one; tests added later are picked up automatically, no workflow
+      # changes needed.
+      - name: Run tests
+        env:
+          DEBUG: 'True'
+          SECRET_KEY: 'test-secret-key-not-for-production'
+          ALLOWED_HOSTS: 'localhost'
+          DB_NAME: test_db
+          DB_USER: test_user
+          DB_PASSWORD: test_pass
+          DB_HOST: localhost
+          DB_PORT: 5432
+        run: python manage.py test
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - name: Apply database migrations
+        env:
+          DEBUG: 'False'
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS: ${{ secrets.PROD_ALLOWED_HOSTS }}
+          DB_NAME: ${{ secrets.PROD_DB_NAME }}
+          DB_USER: ${{ secrets.PROD_DB_USER }}
+          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          DB_HOST: ${{ secrets.PROD_DB_HOST }}
+          DB_PORT: ${{ secrets.PROD_DB_PORT }}
+          DB_SSLMODE: require
+        run: python manage.py migrate --noinput
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      # NOTE: these env vars are visible in the Cloud Run console to anyone
+      # with viewer access on the GCP project. Fine for a first deployment of
+      # a small shop app; if that ever matters more, move DB_PASSWORD/
+      # SECRET_KEY to Google Secret Manager and reference them with
+      # --set-secrets instead of --set-env-vars.
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.GCP_REGION }}
+          image: ${{ env.IMAGE }}
+          env_vars: |
+            DEBUG=False
+            DB_NAME=${{ secrets.PROD_DB_NAME }}
+            DB_USER=${{ secrets.PROD_DB_USER }}
+            DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+            DB_HOST=${{ secrets.PROD_DB_HOST }}
+            DB_PORT=${{ secrets.PROD_DB_PORT }}
+            DB_SSLMODE=require
+            SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+            ALLOWED_HOSTS=${{ secrets.PROD_ALLOWED_HOSTS }}
+            CSRF_TRUSTED_ORIGINS=${{ secrets.PROD_CSRF_TRUSTED_ORIGINS }}
