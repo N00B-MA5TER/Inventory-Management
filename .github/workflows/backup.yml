@@ -1,0 +1,37 @@
+name: Database Backup
+
+on:
+  schedule:
+    # 20:30 UTC = ~2:00 AM IST — after shop hours, low traffic
+    - cron: '30 20 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run backup
+        env:
+          DEBUG: 'False'
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS: 'localhost'
+          DB_NAME: ${{ secrets.PROD_DB_NAME }}
+          DB_USER: ${{ secrets.PROD_DB_USER }}
+          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          DB_HOST: ${{ secrets.PROD_DB_HOST }}
+          DB_PORT: ${{ secrets.PROD_DB_PORT }}
+          BACKUP_DRIVE_FOLDER_ID: ${{ secrets.BACKUP_DRIVE_FOLDER_ID }}
+          BACKUP_GOOGLE_CREDENTIALS_JSON: ${{ secrets.BACKUP_GOOGLE_CREDENTIALS_JSON }}
+        run: python manage.py backup_database
