@@ -9,6 +9,10 @@ env:
   GCP_REGION: asia-south1
   SERVICE_NAME: nandy-inventory
   AR_REPO: nandy-inventory
+  # INFO: one line per request with a DB-time total. DEBUG: also logs every
+  # individual SQL query with its own duration (verbose — bump this to DEBUG
+  # here, push, and drop back to INFO once you've seen what you needed).
+  LOG_LEVEL: INFO
 
 jobs:
   test:
@@ -109,6 +113,7 @@ jobs:
           image: ${{ env.IMAGE }}
           env_vars: |
             DEBUG=False
+            LOG_LEVEL=${{ env.LOG_LEVEL }}
             DB_NAME=${{ secrets.PROD_DB_NAME }}
             DB_USER=${{ secrets.PROD_DB_USER }}
             DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}

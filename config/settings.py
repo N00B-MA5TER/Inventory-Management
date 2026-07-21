@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'ops.middleware.RequestLoggingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -159,3 +160,54 @@ if not DEBUG:
     # hard to walk back if something's misconfigured.
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+
+# Logging — everything goes to stdout as JSON lines, which Cloud Run/Cloud
+# Logging parses automatically into structured, filterable log entries (no
+# extra agent/config needed). LOG_LEVEL=DEBUG additionally logs every SQL
+# query with its own duration (ops.middleware.RequestLoggingMiddleware);
+# LOG_LEVEL=INFO (the default) gives one line per request with a DB time
+# total, without the per-query noise.
+
+LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'message_only': {
+            'format': '%(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'message_only',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': LOG_LEVEL,
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        # Django's default behavior (no explicit config) mails admins on
+        # unhandled 500s instead of printing them anywhere — since no mail
+        # backend is configured, that silently drops them. Route to console
+        # instead so exceptions actually show up in Cloud Logging.
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'ops': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}

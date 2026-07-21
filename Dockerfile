@@ -1,5 +1,11 @@
 FROM python:3.11-slim
 
+# Without this, Python fully buffers stdout when it's not a terminal (which
+# it never is in a container) — logs can sit in memory instead of reaching
+# Cloud Logging until the buffer fills or the process exits. Confirmed this
+# the hard way testing the new request-logging middleware locally.
+ENV PYTHONUNBUFFERED=1
+
 # libpq5: runtime lib psycopg2-binary needs to talk to Postgres
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq5 \
