@@ -1,0 +1,47 @@
+name: Bootstrap Owner Account
+
+# Manual-only, one-off use: creates the first superadmin/owner login on
+# production, or resets that account's password if you forget it later.
+# Everyday staff accounts should be created from the app itself (Staff
+# Accounts -> Add New Account) once an owner account exists to log in with.
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: 'Username for the owner/superadmin account'
+        required: true
+        default: 'owner'
+      email:
+        description: 'Email for the account (optional)'
+        required: false
+        default: ''
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - name: Create/update owner account
+        env:
+          DEBUG: 'False'
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS: ${{ secrets.PROD_ALLOWED_HOSTS }}
+          DB_NAME: ${{ secrets.PROD_DB_NAME }}
+          DB_USER: ${{ secrets.PROD_DB_USER }}
+          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          DB_HOST: ${{ secrets.PROD_DB_HOST }}
+          DB_PORT: ${{ secrets.PROD_DB_PORT }}
+          DB_SSLMODE: require
+          OWNER_BOOTSTRAP_PASSWORD: ${{ secrets.OWNER_BOOTSTRAP_PASSWORD }}
+        run: |
+          python manage.py bootstrap_owner \
+            --username "${{ github.event.inputs.username }}" \
+            --email "${{ github.event.inputs.email }}"

@@ -135,7 +135,29 @@ migrations against Neon and deploys to Cloud Run.
 Once it finishes, find the live URL in the Cloud Run console (or in the
 workflow's deploy step output) and check it loads.
 
-## 8. Custom domain (once you've purchased nandyengineeringworks.com)
+## 8. Log in for the first time (bootstrap the owner account)
+
+The production database starts empty — migrations create the tables, but no
+accounts. There's a separate one-off workflow for creating the very first
+login (`.github/workflows/bootstrap_owner.yml`); everyday staff accounts
+after that get created from inside the app itself (once you can log in:
+**Staff Accounts → Add New Account**).
+
+1. Add one more secret: `OWNER_BOOTSTRAP_PASSWORD` — pick a real password
+   for the owner login (not a placeholder — this becomes the actual login
+   password immediately).
+2. Repo → **Actions** tab → **"Bootstrap Owner Account"** (left sidebar) →
+   **Run workflow**.
+3. Leave `username` as `owner` (or change it), leave `email` blank if you
+   don't need it, → **Run workflow**.
+4. Once it finishes (green checkmark), log in on the live site with
+   username `owner` and the password you put in `OWNER_BOOTSTRAP_PASSWORD`.
+
+This workflow is safe to run again later too — e.g. if you forget the
+password, just re-run it with a new `OWNER_BOOTSTRAP_PASSWORD` value to
+reset it.
+
+## 9. Custom domain (once you've purchased nandyengineeringworks.com)
 
 Cloud Run → your service → Manage Custom Domains → Add Mapping. Google
 gives you DNS records to add at your domain registrar; propagation +
