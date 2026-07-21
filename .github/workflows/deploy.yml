@@ -118,3 +118,14 @@ jobs:
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
             ALLOWED_HOSTS=${{ secrets.PROD_ALLOWED_HOSTS }}
             CSRF_TRUSTED_ORIGINS=${{ secrets.PROD_CSRF_TRUSTED_ORIGINS }}
+
+      # Cloud Run services require authenticated callers by default. This is
+      # a public shop site, so every deploy explicitly (re-)grants public
+      # access rather than relying on it surviving from a one-off console
+      # change — idempotent, safe to run every time.
+      - name: Allow public access
+        run: |
+          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.GCP_REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker"
