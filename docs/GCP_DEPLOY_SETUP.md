@@ -38,30 +38,64 @@ on your behalf.
 
 ## 4. Get your Neon connection details
 
-In your Neon project dashboard → Connection Details. You need the host,
-database name, username, and password separately (not just the combined
-connection string) — the app's settings read them as individual values.
+In your Neon project dashboard → Connection Details. The app's settings
+need the **host, database name, username, and password as five separate
+values**, not the combined connection string.
 
-## 5. GitHub Actions secrets
+If Neon shows you a single connection string like:
 
-Repo → Settings → Secrets and variables → Actions → New repository secret.
-Add each of these (some you may have already added for the backup workflow
-— reuse the same values, don't create duplicates with different names):
+```
+postgresql://alex:AbC123xyz@ep-cool-lab-12345.ap-southeast-1.aws.neon.tech/inventory_db?sslmode=require
+```
 
-| Secret name | Value | Used by |
+it breaks down as:
+
+| Piece | Where it is in the string | Example |
 |---|---|---|
-| `GCP_PROJECT_ID` | Your Google Cloud project ID (not the display name — check the Cloud Console header) | deploy |
-| `GCP_SA_KEY` | Entire contents of the JSON key from step 3 | deploy |
-| `DJANGO_SECRET_KEY` | A random production secret — **do not reuse** the placeholder in your local `.env`. One was generated for you: see below. | deploy, backup |
-| `PROD_DB_NAME` | From Neon (step 4) | deploy, backup |
-| `PROD_DB_USER` | From Neon | deploy, backup |
-| `PROD_DB_PASSWORD` | From Neon | deploy, backup |
-| `PROD_DB_HOST` | From Neon | deploy, backup |
-| `PROD_DB_PORT` | Usually `5432` | deploy, backup |
-| `PROD_ALLOWED_HOSTS` | See step 6 | deploy |
-| `PROD_CSRF_TRUSTED_ORIGINS` | See step 6 | deploy |
-| `BACKUP_DRIVE_FOLDER_ID` | From `BACKUP_SETUP.md`, if not already added | backup |
-| `BACKUP_GOOGLE_CREDENTIALS_JSON` | From `BACKUP_SETUP.md`, if not already added | backup |
+| `PROD_DB_USER` | between `://` and `:` | `alex` |
+| `PROD_DB_PASSWORD` | between `:` and `@` | `AbC123xyz` |
+| `PROD_DB_HOST` | between `@` and the next `/` | `ep-cool-lab-12345.ap-southeast-1.aws.neon.tech` |
+| `PROD_DB_NAME` | after the `/`, before `?` | `inventory_db` |
+| `PROD_DB_PORT` | not shown in the string — Neon uses `5432` | `5432` |
+
+(Some Neon dashboards also have a "Parameters" toggle next to the
+connection string that shows these already split out — use that if it's
+there, it's less error-prone than copying substrings by hand.)
+
+## 5. GitHub Actions secrets — step by step
+
+These are encrypted values GitHub stores for the automated workflow to use,
+so your database password and other sensitive values never sit in the code
+itself. You have not added any of these yet — that's expected, this is the
+step that does it.
+
+**How to add one secret:**
+1. Go to `github.com/N00B-MA5TER/Inventory-Management`
+2. Click **Settings** (top tab of the repo itself — not your personal
+   GitHub account settings)
+3. Left sidebar → **Secrets and variables** → **Actions**
+4. Click the green **New repository secret** button
+5. Type the **Name** exactly as shown below (capitalization matters — copy
+   it rather than retyping if you can), paste the **Value**, click
+   **Add secret**
+6. Repeat for every row in the table below, one at a time
+
+**You need these 10 to deploy.** (The two `BACKUP_*` secrets from
+`BACKUP_SETUP.md` are for the separate daily-backup workflow — skip them
+for now, deployment doesn't need them.)
+
+| Secret name | Value | Where to find it |
+|---|---|---|
+| `GCP_PROJECT_ID` | your project ID | Cloud Console, top bar next to the Google Cloud logo → project dropdown. Use **Project ID**, not the display name (it's usually lowercase-with-hyphens, sometimes with random numbers) |
+| `GCP_SA_KEY` | the whole JSON file's contents | Open the `.json` file from step 3 in Notepad, Ctrl+A to select everything, Ctrl+C, paste it all (including the `{` and `}`) as the value |
+| `DJANGO_SECRET_KEY` | see below | A random production secret — **do not reuse** the placeholder in your local `.env` |
+| `PROD_DB_NAME` | from step 4 | |
+| `PROD_DB_USER` | from step 4 | |
+| `PROD_DB_PASSWORD` | from step 4 | |
+| `PROD_DB_HOST` | from step 4 | |
+| `PROD_DB_PORT` | `5432` | |
+| `PROD_ALLOWED_HOSTS` | `.a.run.app` | literal value — type exactly this, see step 6 for why |
+| `PROD_CSRF_TRUSTED_ORIGINS` | `https://*.a.run.app` | literal value — type exactly this, see step 6 for why |
 
 **Generated `DJANGO_SECRET_KEY` value** (fresh, random, not used anywhere
 else — safe to use directly, but this value has now been shared in this
