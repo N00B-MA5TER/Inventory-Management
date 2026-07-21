@@ -94,8 +94,8 @@ for now, deployment doesn't need them.)
 | `PROD_DB_PASSWORD` | from step 4 | |
 | `PROD_DB_HOST` | from step 4 | |
 | `PROD_DB_PORT` | `5432` | |
-| `PROD_ALLOWED_HOSTS` | `.a.run.app` | literal value — type exactly this, see step 6 for why |
-| `PROD_CSRF_TRUSTED_ORIGINS` | `https://*.a.run.app` | literal value — type exactly this, see step 6 for why |
+| `PROD_ALLOWED_HOSTS` | `.run.app` | literal value — type exactly this, see step 6 for why |
+| `PROD_CSRF_TRUSTED_ORIGINS` | `https://*.run.app` | literal value — type exactly this, see step 6 for why |
 
 **Generated `DJANGO_SECRET_KEY` value** (fresh, random, not used anywhere
 else — safe to use directly, but this value has now been shared in this
@@ -109,19 +109,19 @@ wkwk8#@1)i)zxu(u5!uwciq+jim#jj-m2l%1s)!3#81*!e(6(n
 ## 6. `PROD_ALLOWED_HOSTS` and `PROD_CSRF_TRUSTED_ORIGINS`
 
 Before you own the domain yet, Cloud Run gives every service a default URL
-like `nandy-inventory-xxxxxxxxxx-el.a.run.app`. You won't know the exact
+like `nandy-inventory-xxxxxxxxxx-el.run.app`. You won't know the exact
 random part until after the first deploy.
 
 **First deploy:** set
-- `PROD_ALLOWED_HOSTS` = `.a.run.app` (the leading dot matches any
+- `PROD_ALLOWED_HOSTS` = `.run.app` (the leading dot matches any
   subdomain, so this covers whatever random URL Cloud Run assigns without
   needing to know it in advance)
-- `PROD_CSRF_TRUSTED_ORIGINS` = `https://*.a.run.app`
+- `PROD_CSRF_TRUSTED_ORIGINS` = `https://*.run.app`
 
 **Once you own the domain** and have it mapped (see step 8), update both to
 include it:
-- `PROD_ALLOWED_HOSTS` = `.a.run.app,nandyengineeringworks.com,www.nandyengineeringworks.com`
-- `PROD_CSRF_TRUSTED_ORIGINS` = `https://*.a.run.app,https://nandyengineeringworks.com,https://www.nandyengineeringworks.com`
+- `PROD_ALLOWED_HOSTS` = `.run.app,nandyengineeringworks.com,www.nandyengineeringworks.com`
+- `PROD_CSRF_TRUSTED_ORIGINS` = `https://*.run.app,https://nandyengineeringworks.com,https://www.nandyengineeringworks.com`
 
 Then push any commit (or re-run the workflow manually) to pick up the change.
 
